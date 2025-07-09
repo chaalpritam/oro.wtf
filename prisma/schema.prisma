@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  projects      Project[]      @relation("CreatedBy")
+  designSystems DesignSystem[] @relation("CreatedBy")
+  teamMembers   TeamMember[]
+}
+
+model Team {
+  id            String         @id @default(cuid())
+  name          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  members       TeamMember[]
+  projects      Project[]
+  designSystems DesignSystem[]
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  role     String   @default("viewer") // owner, admin, editor, viewer
+  joinedAt DateTime @default(now())
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+
+  @@unique([teamId, userId])
+}
+
+model Project {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  isArchived    Boolean        @default(false)
+  createdBy     User          @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById   String
+  team          Team?         @relation(fields: [teamId], references: [id])
+  teamId        String?
+  designSystems DesignSystem[]
+}
+
+model DesignSystem {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  version     String      @default("1.0.0")
+  isPublic    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  createdBy   User        @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById String
+  team        Team?       @relation(fields: [teamId], references: [id])
+  teamId      String?
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  tokens      Token[]
+  components  Component[]
+}
+
+model Token {
+  id             String       @id @default(cuid())
+  name           String
+  value          String
+  type           String // color, typography, spacing, borderRadius, shadow
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  designSystem   DesignSystem @relation(fields: [designSystemId], references: [id], onDelete: Cascade)
+  designSystemId String
+
+  @@unique([designSystemId, name])
+}
+
+model Component {
+  id             String       @id @default(cuid())
+  name           String
+  description    String?
+  type           String
+  props          Json         @default("{}")
+  code           String       @db.Text
+  previewImage   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  designSystem   DesignSystem @relation(fields: [designSystemId], references: [id], onDelete: Cascade)
+  designSystemId String
+
+  @@unique([designSystemId, name])
+} 
