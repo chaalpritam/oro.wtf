@@ -1,30 +1,67 @@
-import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { NextRequestWithAuth } from "next-auth/middleware";
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export default async function middleware(req: NextRequestWithAuth) {
-  const token = await getToken({ req });
-  const isAuthenticated = !!token;
-  const isAuthPage =
-    req.nextUrl.pathname.startsWith("/auth/signin") ||
-    req.nextUrl.pathname.startsWith("/auth/signup");
+export async function middleware(req: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  });
 
-  if (isAuthPage) {
-    if (isAuthenticated) {
-      return NextResponse.redirect(new URL("/app", req.url));
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => req.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
     }
-    return NextResponse.next();
+  );
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // If no session and trying to access protected routes, redirect to signin
+  if (!session && req.nextUrl.pathname.startsWith('/app')) {
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = '/auth/signin';
+    return NextResponse.redirect(redirectUrl);
   }
 
-  if (!isAuthenticated && req.nextUrl.pathname.startsWith("/app")) {
-    return NextResponse.redirect(
-      new URL(`/auth/signin?callbackUrl=${req.nextUrl.pathname}`, req.url)
-    );
+  // If session exists and trying to access auth pages, redirect to app
+  if (session && req.nextUrl.pathname.startsWith('/auth')) {
+    const redirectUrl = req.nextUrl.clone();
+    redirectUrl.pathname = '/app';
+    return NextResponse.redirect(redirectUrl);
   }
 
-  return NextResponse.next();
+  return supabaseResponse;
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/auth/signin", "/auth/signup"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+  ],
 }; 
