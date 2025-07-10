@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DataModeToggle } from "@/components/data-mode-toggle"
 
 export function TopNavbar() {
   const { setTheme, theme } = useTheme()
@@ -40,6 +41,8 @@ export function TopNavbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          <DataModeToggle />
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">

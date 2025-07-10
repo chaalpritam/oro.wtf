@@ -1,88 +1,94 @@
 "use client"
 
-import { Home, Palette, Wrench, Eye, Download, FolderOpen } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-
+import { usePathname, useSearchParams } from "next/navigation"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
-} from "@/components/ui/sidebar"
+  LayoutDashboard,
+  Palette,
+  Square,
+  Download,
+  Settings,
+  HelpCircle,
+  FileText,
+} from "lucide-react"
 
-const items = [
+const navigation = [
   {
-    title: "Dashboard",
-    url: "/app",
-    icon: Home,
+    name: "Dashboard",
+    href: "/app",
+    icon: LayoutDashboard,
   },
   {
-    title: "Design Tokens",
-    url: "/app/tokens",
+    name: "Builder",
+    href: "/app/builder",
+    icon: Square,
+  },
+  {
+    name: "Tokens",
+    href: "/app/tokens",
     icon: Palette,
   },
   {
-    title: "Component Builder",
-    url: "/app/builder",
-    icon: Wrench,
-  },
-  {
-    title: "Live Preview",
-    url: "/app/preview",
-    icon: Eye,
-  },
-  {
-    title: "Export",
-    url: "/app/export",
+    name: "Export",
+    href: "/app/export",
     icon: Download,
   },
   {
-    title: "Projects",
-    url: "/app/projects",
-    icon: FolderOpen,
+    name: "Projects",
+    href: "/app/projects",
+    icon: FileText,
   },
 ]
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const designSystemId = searchParams.get("designSystemId")
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="text-sm font-bold">O</span>
+    <div className="flex h-full w-64 flex-col bg-background border-r">
+      <div className="flex h-14 items-center border-b px-4">
+        <Link href="/" className="flex items-center space-x-2">
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-bold text-sm">O</span>
           </div>
-          <span className="font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">Oro</span>
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarRail />
-    </Sidebar>
+          <span className="font-semibold">Oro</span>
+        </Link>
+      </div>
+      <div className="flex-1 space-y-1 p-2">
+        {navigation.map((item) => {
+          const href = designSystemId && item.href !== "/app" 
+            ? `${item.href}?designSystemId=${designSystemId}`
+            : item.href
+          
+          return (
+            <Link key={item.name} href={href}>
+              <Button
+                variant={pathname === item.href ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start",
+                  pathname === item.href && "bg-secondary"
+                )}
+              >
+                <item.icon className="mr-2 h-4 w-4" />
+                {item.name}
+              </Button>
+            </Link>
+          )
+        })}
+      </div>
+      <div className="border-t p-2 space-y-1">
+        <Button variant="ghost" className="w-full justify-start">
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
+        </Button>
+        <Button variant="ghost" className="w-full justify-start">
+          <HelpCircle className="mr-2 h-4 w-4" />
+          Help
+        </Button>
+      </div>
+    </div>
   )
 }
