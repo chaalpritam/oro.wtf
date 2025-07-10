@@ -36,12 +36,13 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Temporarily disabled authentication for /app routes
   // If no session and trying to access protected routes, redirect to signin
-  if (!session && req.nextUrl.pathname.startsWith('/app')) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = '/auth/signin';
-    return NextResponse.redirect(redirectUrl);
-  }
+  // if (!session && req.nextUrl.pathname.startsWith('/app')) {
+  //   const redirectUrl = req.nextUrl.clone();
+  //   redirectUrl.pathname = '/auth/signin';
+  //   return NextResponse.redirect(redirectUrl);
+  // }
 
   // If session exists and trying to access auth pages, redirect to app
   if (session && req.nextUrl.pathname.startsWith('/auth')) {
