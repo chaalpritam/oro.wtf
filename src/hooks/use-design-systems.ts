@@ -11,7 +11,7 @@ export interface UseDesignSystemsOptions {
 export function useDesignSystems(options: UseDesignSystemsOptions = {}) {
   const { dataMode } = useDataMode()
   const [designSystems, setDesignSystems] = useState<DesignSystem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(dataMode === 'database')
   const [error, setError] = useState<string | null>(null)
 
   const fetchDesignSystems = useCallback(async () => {
@@ -28,6 +28,21 @@ export function useDesignSystems(options: UseDesignSystemsOptions = {}) {
       setLoading(false)
     }
   }, [options.projectId, dataMode])
+
+  // For mock mode, load data immediately
+  useEffect(() => {
+    if (dataMode === 'mock') {
+      mockDb.getDesignSystems(options.projectId).then(data => {
+        setDesignSystems(data)
+        setLoading(false)
+      }).catch(err => {
+        setError(err instanceof Error ? err.message : 'Failed to fetch design systems')
+        setLoading(false)
+      })
+    } else {
+      fetchDesignSystems()
+    }
+  }, [dataMode, options.projectId])
 
   const createDesignSystem = useCallback(async (designSystem: Omit<DesignSystem, 'id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -71,10 +86,6 @@ export function useDesignSystems(options: UseDesignSystemsOptions = {}) {
     }
   }, [dataMode])
 
-  useEffect(() => {
-    fetchDesignSystems()
-  }, [fetchDesignSystems])
-
   return {
     designSystems,
     loading,
@@ -89,7 +100,7 @@ export function useDesignSystems(options: UseDesignSystemsOptions = {}) {
 export function useDesignSystem(id: string) {
   const { dataMode } = useDataMode()
   const [designSystem, setDesignSystem] = useState<DesignSystem | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(dataMode === 'database')
   const [error, setError] = useState<string | null>(null)
 
   const fetchDesignSystem = useCallback(async () => {
@@ -104,6 +115,23 @@ export function useDesignSystem(id: string) {
       setError(err instanceof Error ? err.message : 'Failed to fetch design system')
     } finally {
       setLoading(false)
+    }
+  }, [id, dataMode])
+
+  // For mock mode, load data immediately
+  useEffect(() => {
+    if (id) {
+      if (dataMode === 'mock') {
+        mockDb.getDesignSystem(id).then(data => {
+          setDesignSystem(data)
+          setLoading(false)
+        }).catch(err => {
+          setError(err instanceof Error ? err.message : 'Failed to fetch design system')
+          setLoading(false)
+        })
+      } else {
+        fetchDesignSystem()
+      }
     }
   }, [id, dataMode])
 
@@ -138,12 +166,6 @@ export function useDesignSystem(id: string) {
     }
   }, [designSystem, dataMode])
 
-  useEffect(() => {
-    if (id) {
-      fetchDesignSystem()
-    }
-  }, [id, fetchDesignSystem])
-
   return {
     designSystem,
     loading,
@@ -157,7 +179,7 @@ export function useDesignSystem(id: string) {
 export function useTokens(designSystemId: string) {
   const { dataMode } = useDataMode()
   const [tokens, setTokens] = useState<Token[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(dataMode === 'database')
   const [error, setError] = useState<string | null>(null)
 
   const fetchTokens = useCallback(async () => {
@@ -172,6 +194,23 @@ export function useTokens(designSystemId: string) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tokens')
     } finally {
       setLoading(false)
+    }
+  }, [designSystemId, dataMode])
+
+  // For mock mode, load data immediately
+  useEffect(() => {
+    if (designSystemId) {
+      if (dataMode === 'mock') {
+        mockDb.getTokens(designSystemId).then(data => {
+          setTokens(data)
+          setLoading(false)
+        }).catch(err => {
+          setError(err instanceof Error ? err.message : 'Failed to fetch tokens')
+          setLoading(false)
+        })
+      } else {
+        fetchTokens()
+      }
     }
   }, [designSystemId, dataMode])
 
@@ -217,12 +256,6 @@ export function useTokens(designSystemId: string) {
     }
   }, [dataMode])
 
-  useEffect(() => {
-    if (designSystemId) {
-      fetchTokens()
-    }
-  }, [designSystemId, fetchTokens])
-
   return {
     tokens,
     loading,
@@ -237,7 +270,7 @@ export function useTokens(designSystemId: string) {
 export function useComponents(designSystemId: string) {
   const { dataMode } = useDataMode()
   const [components, setComponents] = useState<Component[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(dataMode === 'database')
   const [error, setError] = useState<string | null>(null)
 
   const fetchComponents = useCallback(async () => {
@@ -252,6 +285,23 @@ export function useComponents(designSystemId: string) {
       setError(err instanceof Error ? err.message : 'Failed to fetch components')
     } finally {
       setLoading(false)
+    }
+  }, [designSystemId, dataMode])
+
+  // For mock mode, load data immediately
+  useEffect(() => {
+    if (designSystemId) {
+      if (dataMode === 'mock') {
+        mockDb.getComponents(designSystemId).then(data => {
+          setComponents(data)
+          setLoading(false)
+        }).catch(err => {
+          setError(err instanceof Error ? err.message : 'Failed to fetch components')
+          setLoading(false)
+        })
+      } else {
+        fetchComponents()
+      }
     }
   }, [designSystemId, dataMode])
 
@@ -296,12 +346,6 @@ export function useComponents(designSystemId: string) {
       throw err
     }
   }, [dataMode])
-
-  useEffect(() => {
-    if (designSystemId) {
-      fetchComponents()
-    }
-  }, [designSystemId, fetchComponents])
 
   return {
     components,

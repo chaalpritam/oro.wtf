@@ -22,6 +22,7 @@ import {
   Eye,
   Code,
   Loader2,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,8 +32,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useDesignSystem } from "@/hooks/use-design-systems"
 import { useComponents } from "@/hooks/use-design-systems"
+import { useDataMode } from "@/lib/data-mode"
 import { toast } from "sonner"
 
 interface CanvasElement {
@@ -75,6 +78,7 @@ const componentPalette = [
 export default function ComponentBuilder() {
   const searchParams = useSearchParams()
   const designSystemId = searchParams.get("designSystemId")
+  const { dataMode, isDatabaseAvailable } = useDataMode()
   
   const { designSystem, loading: designSystemLoading } = useDesignSystem(designSystemId || "")
   const { components, createComponent, updateComponent, deleteComponent } = useComponents(designSystemId || "")
@@ -272,6 +276,17 @@ export default function ComponentBuilder() {
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
           <span>Loading design system...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!designSystemId) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">No design system selected</p>
+          <Button onClick={() => window.history.back()}>Go Back</Button>
         </div>
       </div>
     )

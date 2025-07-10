@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Edit, Copy, Trash2, Clock, Loader2 } from "lucide-react"
+import { Plus, Edit, Copy, Trash2, Clock, Loader2, AlertCircle, Database } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useDesignSystems } from "@/hooks/use-design-systems"
 import { useDataMode } from "@/lib/data-mode"
 import { useRouter } from "next/navigation"
@@ -14,7 +15,7 @@ import { mockDb } from "@/lib/mock-data"
 
 export default function Dashboard() {
   const router = useRouter()
-  const { dataMode } = useDataMode()
+  const { dataMode, isDatabaseAvailable, databaseError } = useDataMode()
   const { designSystems, loading, error, createDesignSystem, deleteDesignSystem } = useDesignSystems()
   const [isCreating, setIsCreating] = useState(false)
 
@@ -77,26 +78,20 @@ export default function Dashboard() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-destructive">Error loading design systems: {error}</p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="flex-1 space-y-8 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
           <p className="text-muted-foreground">Build and manage your design systems with ease</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Using {dataMode === 'database' ? 'Database' : 'Mock'} data
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-muted-foreground">
+              Using {dataMode === 'database' ? 'Database' : 'Mock'} data
+            </p>
+            {dataMode === 'database' && !isDatabaseAvailable && (
+              <AlertCircle className="h-4 w-4 text-destructive" />
+            )}
+          </div>
         </div>
         <Button 
           size="lg" 
@@ -112,6 +107,28 @@ export default function Dashboard() {
           {isCreating ? "Creating..." : "Create New Design System"}
         </Button>
       </div>
+
+      {/* Database Error Alert */}
+      {dataMode === 'database' && !isDatabaseAvailable && (
+        <Alert className="border-destructive bg-destructive/10">
+          <Database className="h-4 w-4" />
+          <AlertDescription>
+            Database is not properly configured. Please set up your Supabase environment variables 
+            (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY) to use database mode. 
+            Currently using mock data for demonstration.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* General Error Alert */}
+      {error && (
+        <Alert className="border-destructive bg-destructive/10">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {designSystems.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
