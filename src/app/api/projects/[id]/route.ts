@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import type { Project, ApiResponse } from '@/lib/types';
 import { z } from 'zod';
-import prisma from '@/lib/db';
+import { createServerClient } from '@/lib/supabase-server';
 
 const projectSchema = z.object({
   name: z.string().min(1).max(100),
@@ -16,19 +15,31 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
 
-    const project = await prisma.project.findUnique({
-      where: { id },
-      include: {
-        designSystems: true,
-        team: true,
-        createdBy: true,
-      },
-    });
+    const { data: project, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        design_systems(*),
+        teams(name),
+        users!projects_created_by_fkey(name, email)
+      `)
+      .eq('id', id)
+      .single();
 
-    if (!project) {
-      return NextResponse.json<ApiResponse<Project>>(
+    if (error || !project) {
+      return NextResponse.json(
         {
           success: false,
           error: 'Project not found',
@@ -37,13 +48,13 @@ export async function GET(
       );
     }
 
-    return NextResponse.json<ApiResponse<Project>>({
+    return NextResponse.json({
       success: true,
       data: project,
     });
   } catch (error) {
     console.error('Failed to fetch project:', error);
-    return NextResponse.json<ApiResponse<Project>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch project',
@@ -59,33 +70,59 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
     const body = await request.json();
     const validatedData = projectSchema.parse(body);
 
-    const project = await prisma.project.update({
-      where: { id },
-      data: {
+    const { data: project, error } = await supabase
+      .from('projects')
+      .update({
         name: validatedData.name,
         description: validatedData.description,
-        teamId: validatedData.teamId,
-        isArchived: validatedData.isArchived,
-      },
-      include: {
-        designSystems: true,
-        team: true,
-        createdBy: true,
-      },
-    });
+        team_id: validatedData.teamId,
+        is_archived: validatedData.isArchived,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        design_systems(*),
+        teams(name),
+        users!projects_created_by_fkey(name, email)
+      `)
+      .single();
 
-    return NextResponse.json<ApiResponse<Project>>({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Project not found',
+          },
+          { status: 404 }
+        );
+      }
+      throw error;
+    }
+
+    return NextResponse.json({
       success: true,
       data: project,
     });
   } catch (error) {
     console.error('Failed to update project:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json<ApiResponse<Project>>(
+      return NextResponse.json(
         {
           success: false,
           error: 'Invalid project data',
@@ -94,18 +131,7 @@ export async function PUT(
       );
     }
 
-    // Check if the error is a Prisma record not found error
-    if (error.code === 'P2025') {
-      return NextResponse.json<ApiResponse<Project>>(
-        {
-          success: false,
-          error: 'Project not found',
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json<ApiResponse<Project>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to update project',
@@ -121,29 +147,42 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
 
-    await prisma.project.delete({
-      where: { id },
-    });
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', id);
 
-    return NextResponse.json<ApiResponse<void>>({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Project not found',
+          },
+          { status: 404 }
+        );
+      }
+      throw error;
+    }
+
+    return NextResponse.json({
       success: true,
     });
   } catch (error) {
     console.error('Failed to delete project:', error);
-    // Check if the error is a Prisma record not found error
-    if (error.code === 'P2025') {
-      return NextResponse.json<ApiResponse<void>>(
-        {
-          success: false,
-          error: 'Project not found',
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json<ApiResponse<void>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to delete project',

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import type { DesignSystem, ApiResponse } from '@/lib/types';
 import { z } from 'zod';
-import prisma from '@/lib/db';
+import { createServerClient } from '@/lib/supabase-server';
+import { db } from '@/lib/db';
 
 // Validation schema for design system creation/update
 const designSystemSchema = z.object({
@@ -16,23 +16,25 @@ const designSystemSchema = z.object({
 // GET /api/design-systems
 export async function GET() {
   try {
-    const designSystems = await prisma.designSystem.findMany({
-      include: {
-        tokens: true,
-        components: true,
-        team: true,
-        createdBy: true,
-        project: true,
-      },
-    });
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
     
-    return NextResponse.json<ApiResponse<DesignSystem[]>>({
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const designSystems = await db.getDesignSystems();
+    
+    return NextResponse.json({
       success: true,
       data: designSystems,
     });
   } catch (error) {
     console.error('Failed to fetch design systems:', error);
-    return NextResponse.json<ApiResponse<DesignSystem[]>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch design systems',
@@ -45,32 +47,30 @@ export async function GET() {
 // POST /api/design-systems
 export async function POST(request: Request) {
   try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const validatedData = designSystemSchema.parse(body);
 
-    // TODO: Get actual user ID from auth session
-    const userId = 'temp-user-id';
-
-    const designSystem = await prisma.designSystem.create({
-      data: {
-        name: validatedData.name,
-        description: validatedData.description,
-        teamId: validatedData.teamId,
-        isPublic: validatedData.isPublic,
-        version: validatedData.version,
-        projectId: validatedData.projectId,
-        createdById: userId,
-      },
-      include: {
-        tokens: true,
-        components: true,
-        team: true,
-        createdBy: true,
-        project: true,
-      },
+    const designSystem = await db.createDesignSystem({
+      name: validatedData.name,
+      description: validatedData.description,
+      teamId: validatedData.teamId,
+      isPublic: validatedData.isPublic,
+      version: validatedData.version,
+      projectId: validatedData.projectId,
+      createdBy: user.id,
     });
 
-    return NextResponse.json<ApiResponse<DesignSystem>>(
+    return NextResponse.json(
       {
         success: true,
         data: designSystem,
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Failed to create design system:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json<ApiResponse<DesignSystem>>(
+      return NextResponse.json(
         {
           success: false,
           error: 'Invalid design system data',
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json<ApiResponse<DesignSystem>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to create design system',

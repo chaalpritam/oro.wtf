@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import type { DesignSystem, ApiResponse } from '@/lib/types';
 import { z } from 'zod';
-import prisma from '@/lib/db';
+import { createServerClient } from '@/lib/supabase-server';
+import { db } from '@/lib/db';
 
 const designSystemSchema = z.object({
   name: z.string().min(1).max(100),
@@ -17,21 +17,34 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
 
-    const designSystem = await prisma.designSystem.findUnique({
-      where: { id },
-      include: {
-        tokens: true,
-        components: true,
-        team: true,
-        createdBy: true,
-        project: true,
-      },
-    });
+    // Get design system with tokens and components
+    const { data: designSystem, error } = await supabase
+      .from('design_systems')
+      .select(`
+        *,
+        tokens(*),
+        components(*),
+        teams(name),
+        users!design_systems_created_by_fkey(name, email),
+        projects(name)
+      `)
+      .eq('id', id)
+      .single();
 
-    if (!designSystem) {
-      return NextResponse.json<ApiResponse<DesignSystem>>(
+    if (error || !designSystem) {
+      return NextResponse.json(
         {
           success: false,
           error: 'Design system not found',
@@ -40,13 +53,13 @@ export async function GET(
       );
     }
 
-    return NextResponse.json<ApiResponse<DesignSystem>>({
+    return NextResponse.json({
       success: true,
       data: designSystem,
     });
   } catch (error) {
     console.error('Failed to fetch design system:', error);
-    return NextResponse.json<ApiResponse<DesignSystem>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch design system',
@@ -62,36 +75,62 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
     const body = await request.json();
     const validatedData = designSystemSchema.parse(body);
 
-    const designSystem = await prisma.designSystem.update({
-      where: { id },
-      data: {
+    const { data: designSystem, error } = await supabase
+      .from('design_systems')
+      .update({
         name: validatedData.name,
         description: validatedData.description,
-        teamId: validatedData.teamId,
-        isPublic: validatedData.isPublic,
+        team_id: validatedData.teamId,
+        is_public: validatedData.isPublic,
         version: validatedData.version,
-      },
-      include: {
-        tokens: true,
-        components: true,
-        team: true,
-        createdBy: true,
-        project: true,
-      },
-    });
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select(`
+        *,
+        tokens(*),
+        components(*),
+        teams(name),
+        users!design_systems_created_by_fkey(name, email),
+        projects(name)
+      `)
+      .single();
 
-    return NextResponse.json<ApiResponse<DesignSystem>>({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Design system not found',
+          },
+          { status: 404 }
+        );
+      }
+      throw error;
+    }
+
+    return NextResponse.json({
       success: true,
       data: designSystem,
     });
   } catch (error) {
     console.error('Failed to update design system:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json<ApiResponse<DesignSystem>>(
+      return NextResponse.json(
         {
           success: false,
           error: 'Invalid design system data',
@@ -100,18 +139,7 @@ export async function PUT(
       );
     }
 
-    // Check if the error is a Prisma record not found error
-    if (error.code === 'P2025') {
-      return NextResponse.json<ApiResponse<DesignSystem>>(
-        {
-          success: false,
-          error: 'Design system not found',
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json<ApiResponse<DesignSystem>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to update design system',
@@ -127,29 +155,42 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
 
-    await prisma.designSystem.delete({
-      where: { id },
-    });
+    const { error } = await supabase
+      .from('design_systems')
+      .delete()
+      .eq('id', id);
 
-    return NextResponse.json<ApiResponse<void>>({
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Design system not found',
+          },
+          { status: 404 }
+        );
+      }
+      throw error;
+    }
+
+    return NextResponse.json({
       success: true,
     });
   } catch (error) {
     console.error('Failed to delete design system:', error);
-    // Check if the error is a Prisma record not found error
-    if (error.code === 'P2025') {
-      return NextResponse.json<ApiResponse<void>>(
-        {
-          success: false,
-          error: 'Design system not found',
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json<ApiResponse<void>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to delete design system',

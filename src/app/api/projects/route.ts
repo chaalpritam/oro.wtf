@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import type { Project, ApiResponse } from '@/lib/types';
 import { z } from 'zod';
-import prisma from '@/lib/db';
+import { createServerClient } from '@/lib/supabase-server';
+import { db } from '@/lib/db';
 
 // Validation schema for project creation/update
 const projectSchema = z.object({
@@ -13,21 +13,25 @@ const projectSchema = z.object({
 // GET /api/projects
 export async function GET() {
   try {
-    const projects = await prisma.project.findMany({
-      include: {
-        designSystems: true,
-        team: true,
-        createdBy: true,
-      },
-    });
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
     
-    return NextResponse.json<ApiResponse<Project[]>>({
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const projects = await db.getProjects();
+    
+    return NextResponse.json({
       success: true,
       data: projects,
     });
   } catch (error) {
     console.error('Failed to fetch projects:', error);
-    return NextResponse.json<ApiResponse<Project[]>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to fetch projects',
@@ -40,27 +44,27 @@ export async function GET() {
 // POST /api/projects
 export async function POST(request: Request) {
   try {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const validatedData = projectSchema.parse(body);
 
-    // TODO: Get actual user ID from auth session
-    const userId = 'temp-user-id';
-
-    const project = await prisma.project.create({
-      data: {
-        name: validatedData.name,
-        description: validatedData.description,
-        teamId: validatedData.teamId,
-        createdById: userId,
-      },
-      include: {
-        designSystems: true,
-        team: true,
-        createdBy: true,
-      },
+    const project = await db.createProject({
+      name: validatedData.name,
+      description: validatedData.description,
+      teamId: validatedData.teamId,
+      createdBy: user.id,
     });
 
-    return NextResponse.json<ApiResponse<Project>>(
+    return NextResponse.json(
       {
         success: true,
         data: project,
@@ -70,7 +74,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Failed to create project:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json<ApiResponse<Project>>(
+      return NextResponse.json(
         {
           success: false,
           error: 'Invalid project data',
@@ -79,7 +83,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json<ApiResponse<Project>>(
+    return NextResponse.json(
       {
         success: false,
         error: 'Failed to create project',
