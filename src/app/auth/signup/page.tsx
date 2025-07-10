@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Github, Mail } from "lucide-react";
-import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { auth } from "@/lib/auth";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -41,36 +41,57 @@ export default function SignUpPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      const { data, error } = await auth.signUp(formData.email, formData.password, formData.name);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Something went wrong");
+      if (error) {
+        setError(error.message || "Failed to create account");
+        return;
       }
 
-      // Sign in the user after successful registration
-      const result = await signIn("credentials", {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (result?.error) {
-        throw new Error("Failed to sign in");
+      if (data.user) {
+        // If email confirmation is required, show a message
+        if (!data.session) {
+          setError("Please check your email to confirm your account");
+          return;
+        }
+        
+        // If no email confirmation required, redirect to app
+        router.push("/app");
       }
-
-      router.push("/app");
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await auth.signInWithGoogle();
+      if (error) {
+        setError(error.message || "Failed to sign in with Google");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGithubSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await auth.signInWithGithub();
+      if (error) {
+        setError(error.message || "Failed to sign in with GitHub");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +110,7 @@ export default function SignUpPage() {
           <div className="grid grid-cols-2 gap-4">
             <Button
               variant="outline"
-              onClick={() => signIn("github", { callbackUrl: "/app" })}
+              onClick={handleGithubSignIn}
               disabled={isLoading}
             >
               <Github className="mr-2 h-4 w-4" />
@@ -97,7 +118,7 @@ export default function SignUpPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => signIn("google", { callbackUrl: "/app" })}
+              onClick={handleGoogleSignIn}
               disabled={isLoading}
             >
               <Mail className="mr-2 h-4 w-4" />

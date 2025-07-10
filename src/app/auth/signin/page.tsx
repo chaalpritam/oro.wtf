@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Github, Mail } from "lucide-react";
@@ -17,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { auth } from "@/lib/auth";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -33,18 +33,48 @@ export default function SignInPage() {
     setError(null);
 
     try {
-      const result = await signIn("credentials", {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-      });
+      const { data, error } = await auth.signIn(formData.email, formData.password);
 
-      if (result?.error) {
-        setError("Invalid email or password");
+      if (error) {
+        setError(error.message || "Invalid email or password");
         return;
       }
 
-      router.push("/app");
+      if (data.user) {
+        router.push("/app");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await auth.signInWithGoogle();
+      if (error) {
+        setError(error.message || "Failed to sign in with Google");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGithubSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await auth.signInWithGithub();
+      if (error) {
+        setError(error.message || "Failed to sign in with GitHub");
+      }
     } catch (error) {
       setError("An error occurred. Please try again.");
     } finally {
@@ -65,7 +95,7 @@ export default function SignInPage() {
           <div className="grid grid-cols-2 gap-4">
             <Button
               variant="outline"
-              onClick={() => signIn("github", { callbackUrl: "/app" })}
+              onClick={handleGithubSignIn}
               disabled={isLoading}
             >
               <Github className="mr-2 h-4 w-4" />
@@ -73,7 +103,7 @@ export default function SignInPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => signIn("google", { callbackUrl: "/app" })}
+              onClick={handleGoogleSignIn}
               disabled={isLoading}
             >
               <Mail className="mr-2 h-4 w-4" />
