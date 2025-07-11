@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
 
 const features = [
   {
@@ -209,7 +210,7 @@ export default function LandingPage() {
                   <Zap className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Interactive Demo Coming Soon</h3>
-                <p className="text-muted-foreground">Experience the full power of Oro's visual builder</p>
+                <p className="text-muted-foreground">Experience the full power of Oro&apos;s visual builder</p>
               </div>
             </div>
           </div>
@@ -227,9 +228,9 @@ export default function LandingPage() {
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="border-0 shadow-sm">
                 <CardContent className="pt-6">
-                  <p className="text-muted-foreground mb-4">"{testimonial.content}"</p>
+                  <p className="text-muted-foreground mb-4">&quot;{testimonial.content}&quot;</p>
                   <div className="flex items-center gap-3">
-                    <img
+                    <Image
                       src={testimonial.avatar || "/placeholder.svg"}
                       alt={testimonial.name}
                       className="h-10 w-10 rounded-full"
@@ -253,7 +254,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Simple, transparent pricing</h2>
-            <p className="text-xl text-muted-foreground">Choose the plan that's right for your team</p>
+            <p className="text-xl text-muted-foreground">Choose the plan that&apos;s right for your team</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {pricingPlans.map((plan, index) => (

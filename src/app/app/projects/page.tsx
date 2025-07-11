@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from "next/image"
 
 const projects = [
   {
@@ -195,7 +196,7 @@ export default function ProjectsPage() {
             {filteredProjects.map((project) => (
               <Card key={project.id} className="group hover:shadow-md transition-shadow">
                 <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
-                  <img
+                  <Image
                     src={project.thumbnail || "/placeholder.svg"}
                     alt={project.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
@@ -297,7 +298,7 @@ export default function ProjectsPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center gap-6">
                     <div className="w-24 h-16 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                      <img
+                      <Image
                         src={project.thumbnail || "/placeholder.svg"}
                         alt={project.name}
                         className="w-full h-full object-cover"

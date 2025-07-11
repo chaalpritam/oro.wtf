@@ -19,11 +19,11 @@ const colorTokens = [
   { name: "Info", value: "#06b6d4", description: "Information" },
 ]
 
-const typographyTokens = [
-  { name: "Font Family", value: "Inter, sans-serif" },
-  { name: "Base Size", value: "16px" },
-  { name: "Scale Ratio", value: "1.25" },
-]
+// const typographyTokens = [
+//   { name: "Font Family", value: "Inter, sans-serif" },
+//   { name: "Base Size", value: "16px" },
+//   { name: "Scale Ratio", value: "1.25" },
+// ]
 
 const spacingTokens = [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96]
 

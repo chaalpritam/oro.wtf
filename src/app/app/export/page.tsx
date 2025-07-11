@@ -49,55 +49,55 @@ const designTokensJSON = `{
   }
 }`
 
-const tailwindConfig = `/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        primary: '#3b82f6',
-        secondary: '#64748b',
-        success: '#10b981',
-        error: '#ef4444',
-        warning: '#f59e0b',
-        info: '#06b6d4',
-      },
-      fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-      },
-      spacing: {
-        '1': '4px',
-        '2': '8px',
-        '3': '12px',
-        '4': '16px',
-        '5': '20px',
-        '6': '24px',
-        '8': '32px',
-        '10': '40px',
-        '12': '48px',
-        '16': '64px',
-      },
-      borderRadius: {
-        'sm': '0.25rem',
-        'md': '0.375rem',
-        'lg': '0.5rem',
-        'xl': '0.75rem',
-        'full': '9999px',
-      },
-      boxShadow: {
-        'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-        'md': '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-        'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-        'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1)',
-      }
-    },
-  },
-  plugins: [],
-}`
+// const tailwindConfig = `/** @type {import('tailwindcss').Config} */
+// module.exports = {
+//   content: [
+//     './pages/**/*.{js,ts,jsx,tsx,mdx}',
+//     './components/**/*.{js,ts,jsx,tsx,mdx}',
+//     './app/**/*.{js,ts,jsx,tsx,mdx}',
+//   ],
+//   theme: {
+//     extend: {
+//       colors: {
+//         primary: '#3b82f6',
+//         secondary: '#64748b',
+//         success: '#10b981',
+//         error: '#ef4444',
+//         warning: '#f59e0b',
+//         info: '#06b6d4',
+//       },
+//       fontFamily: {
+//         sans: ['Inter', 'sans-serif'],
+//       },
+//       spacing: {
+//         '1': '4px',
+//         '2': '8px',
+//         '3': '12px',
+//         '4': '16px',
+//         '5': '20px',
+//         '6': '24px',
+//         '8': '32px',
+//         '10': '40px',
+//         '12': '48px',
+//         '16': '64px',
+//       },
+//       borderRadius: {
+//         'sm': '0.25rem',
+//         'md': '0.375rem',
+//         'lg': '0.5rem',
+//         'xl': '0.75rem',
+//         'full': '9999px',
+//       },
+//       boxShadow: {
+//         'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+//         'md': '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+//         'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+//         'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+//       }
+//     },
+//   },
+//   plugins: [],
+// }`
 
 const componentJSX = `import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
